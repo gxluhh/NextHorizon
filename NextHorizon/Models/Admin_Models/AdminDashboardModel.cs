@@ -11,11 +11,11 @@ namespace NextHorizon.Models.Admin_Models
     public List<ConsumerLeaderboardViewModel> ConsumerLeaderboard { get; set; }
      public List<DashboardApprovalItem> ApprovalHub { get; set; } = new();
 
-   
+    public int PendingTickets { get; set; }
+    public List<PendingTicketViewModel> PendingTicketsList { get; set; } = new List<PendingTicketViewModel>();
     public decimal PlatformRevenue { get; set; }
     public int PendingPayouts { get; set; }
     public int PendingSellers { get; set; }
-    public int PendingTickets { get; set; }
     public List<DashboardAuditLog> AuditLogs { get; set; } = new();
 }
 
@@ -83,4 +83,49 @@ public class DashboardApprovalItem
     public string ActionLabel  { get; set; } = "";
     public string RedirectUrl  { get; set; } = "";
 }
+
+public class PendingTicketViewModel
+{
+    public int Id { get; set; }
+    public string Category { get; set; }
+    public string Question { get; set; }
+    public string Status { get; set; }
+    public string UserType { get; set; }
+    public string SenderType { get; set; }
+    public string SenderName { get; set; }
+    public DateTime CreatedAt { get; set; }
+    
+    // For display formatting
+    public string TimeAgo
+    {
+        get
+        {
+            var diff = DateTime.Now - CreatedAt;
+            if (diff.TotalMinutes < 1) return "Just now";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+            if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} hours ago";
+            return $"{(int)diff.TotalDays} days ago";
+        }
+    }
+    
+    public string IconClass => Category?.ToLower() switch
+    {
+        "login" => "bi bi-box-arrow-in-right",
+        "payment" => "bi bi-credit-card",
+        "verification" => "bi bi-shield-check",
+        "order" => "bi bi-truck",
+        _ => "bi bi-envelope"
+    };
+    
+    public string IconColor => Category?.ToLower() switch
+    {
+        "login" => "text-primary",
+        "payment" => "text-success",
+        "verification" => "text-warning",
+        "order" => "text-info",
+        _ => "text-secondary"
+    };
 }
+
+}
+

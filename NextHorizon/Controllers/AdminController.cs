@@ -97,7 +97,7 @@
 
         // URL: /Admin/Dashboard - Accessible by all admin roles
         [HttpGet]
-  public async Task<IActionResult> Dashboard()
+ public async Task<IActionResult> Dashboard()
 {
     var redirect = RedirectToLoginIfNotAuthenticated();
     if (redirect != null) return redirect;
@@ -105,8 +105,9 @@
     var leaderboard   = new List<ConsumerLeaderboardViewModel>();
     var auditLogs     = new List<DashboardAuditLog>();
     var approvalItems = new List<DashboardApprovalItem>();
+    var pendingTickets = new List<PendingTicketViewModel>(); 
     decimal revenue   = 0;
-    int pendingPayouts = 0, pendingSellers = 0, pendingTickets = 0;
+    int pendingPayouts = 0, pendingSellers = 0, pendingTicketsCount = 0;
 
     using (var connection = new SqlConnection(_connectionString))
     {
@@ -125,18 +126,18 @@
                     pendingSellers = reader.GetInt32(reader.GetOrdinal("PendingSellers"));
                 }
 
-                    // Result Set 2: Leaderboard
-                    await reader.NextResultAsync();
-                    while (await reader.ReadAsync())
+                // Result Set 2: Leaderboard
+                await reader.NextResultAsync();
+                while (await reader.ReadAsync())
+                {
+                    leaderboard.Add(new ConsumerLeaderboardViewModel
                     {
-                        leaderboard.Add(new ConsumerLeaderboardViewModel
-                        {
-                            Rank       = reader.GetInt32(reader.GetOrdinal("Rank")),
-                            UserName   = reader["AthleteName"]?.ToString() ?? "Unknown User",
-                            StravaKM   = Convert.ToDecimal(reader["DistanceKm"] ?? 0),
-                            IsVerified = reader["IsVerified"] != DBNull.Value && Convert.ToBoolean(reader["IsVerified"])
-                        });
-                    }
+                        Rank       = reader.GetInt32(reader.GetOrdinal("Rank")),
+                        UserName   = reader["AthleteName"]?.ToString() ?? "Unknown User",
+                        StravaKM   = Convert.ToDecimal(reader["DistanceKm"] ?? 0),
+                        IsVerified = reader["IsVerified"] != DBNull.Value && Convert.ToBoolean(reader["IsVerified"])
+                    });
+                }
 
                 // Result Set 3: Audit Logs
                 await reader.NextResultAsync();
@@ -164,6 +165,36 @@
                     });
             }
         }
+        
+        // Get pending support tickets
+        using (var cmd = new SqlCommand("sp_GetPendingSupportTickets", connection))
+        {
+            cmd.CommandType = CommandType.StoredProcedure;
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    var status = reader.GetString(reader.GetOrdinal("Status"));
+                    
+                    // Only add if status is "Waiting"
+                    if (status == "Waiting" || status == "waiting")
+                    {
+                        pendingTickets.Add(new PendingTicketViewModel
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Category = reader.IsDBNull(reader.GetOrdinal("Category")) ? "General" : reader.GetString(reader.GetOrdinal("Category")),
+                            Question = reader.GetString(reader.GetOrdinal("Question")),
+                            Status = status,
+                            UserType = reader.GetString(reader.GetOrdinal("UserType")),
+                            SenderType = reader.GetString(reader.GetOrdinal("SenderType")),
+                            CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
+                        });
+                    }
+                }
+            }
+        }
+
+        pendingTicketsCount = pendingTickets.Count;
     }
 
     var model = new SuperAdminDashboardViewModel
@@ -171,7 +202,8 @@
         PlatformRevenue     = revenue,
         PendingPayouts      = pendingPayouts,
         PendingSellers      = pendingSellers,
-        PendingTickets      = pendingTickets,
+        PendingTickets      = pendingTicketsCount,
+        PendingTicketsList  = pendingTickets, // Add this property
         ConsumerLeaderboard = leaderboard,
         AuditLogs           = auditLogs,
         ApprovalHub         = approvalItems,
@@ -2211,6 +2243,42 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
 
            
         #region Challenges
+        
+        private async Task UpdateChallengeStatusesAndAssignPrizes()
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    using (var command = new SqlCommand("sp_UpdateChallengeStatusesAndAssignPrizes", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        
+                        await connection.OpenAsync();
+                        
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                int updatedToLive = reader.GetInt32(reader.GetOrdinal("UpdatedToLive"));
+                                int updatedToCompleted = reader.GetInt32(reader.GetOrdinal("UpdatedToCompleted"));
+                                int prizesAssigned = reader.GetInt32(reader.GetOrdinal("PrizesAssigned"));
+                                
+                                if (updatedToLive > 0 || updatedToCompleted > 0 || prizesAssigned > 0)
+                                {
+                                    Console.WriteLine($"Status Update: {updatedToLive} to Live, {updatedToCompleted} to Completed, {prizesAssigned} prizes assigned");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating challenge statuses and prizes: {ex.Message}");
+            }
+        }
+
 
         // GET: Tasks page (list all challenges)
         public IActionResult Tasks()
@@ -2240,6 +2308,7 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
         [HttpGet]
         public async Task<IActionResult> GetAllChallenges(string status = null)
         {
+            await UpdateChallengeStatusesAndAssignPrizes();
             try
             {
                 var challenges = new List<ChallengeViewModel>();
@@ -2439,6 +2508,7 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
         [HttpGet]
         public async Task<IActionResult> GetChallengeDetails(int id)
         {
+            await UpdateChallengeStatusesAndAssignPrizes();
             try
             {
                 ChallengeViewModel challenge = null;
@@ -3470,10 +3540,282 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllPrizes(string status = "all", string searchCode = null)
+        {
+            try
+            {
+                var prizes = new List<object>();
+                
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    using (var command = new SqlCommand("sp_GetAllPrizes", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@Status", status);
+                        command.Parameters.AddWithValue("@UserId", 0);
+                        command.Parameters.AddWithValue("@SearchCode", searchCode ?? (object)DBNull.Value);
+                        
+                        await connection.OpenAsync();
+                        
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                var prize = new
+                                {
+                                    winnerId = reader.GetInt32(reader.GetOrdinal("winner_id")),
+                                    prizeId = reader.GetInt32(reader.GetOrdinal("prize_id")),
+                                    participantId = reader.GetInt32(reader.GetOrdinal("participant_id")),
+                                    challengeId = reader.GetInt32(reader.GetOrdinal("challenge_id")),
+                                    rankPosition = reader.GetInt32(reader.GetOrdinal("rank_position")),
+                                    claimStatus = reader.GetString(reader.GetOrdinal("claim_status")),
+                                    claimCode = reader.IsDBNull(reader.GetOrdinal("claim_code")) ? null : reader.GetString(reader.GetOrdinal("claim_code")),
+                                    claimDeadline = reader.IsDBNull(reader.GetOrdinal("claim_deadline")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("claim_deadline")),
+                                    claimDate = reader.IsDBNull(reader.GetOrdinal("claim_date")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("claim_date")),
+                                    claimNotes = reader.IsDBNull(reader.GetOrdinal("claim_notes")) ? null : reader.GetString(reader.GetOrdinal("claim_notes")),
+                                    createdAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+                                    description = reader.IsDBNull(reader.GetOrdinal("description")) ? null : reader.GetString(reader.GetOrdinal("description")),
+                                    cashAmount = reader.IsDBNull(reader.GetOrdinal("cash_amount")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("cash_amount")),
+                                    voucherDiscountPercent = reader.IsDBNull(reader.GetOrdinal("voucher_discount_percent")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("voucher_discount_percent")),
+                                    voucherDiscountFixed = reader.IsDBNull(reader.GetOrdinal("voucher_discount_fixed")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("voucher_discount_fixed")),
+                                    rewardName = reader.IsDBNull(reader.GetOrdinal("reward_name")) ? null : reader.GetString(reader.GetOrdinal("reward_name")),
+                                    rewardValue = reader.IsDBNull(reader.GetOrdinal("reward_value")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("reward_value")),
+                                    tierName = reader.IsDBNull(reader.GetOrdinal("tier_name")) ? null : reader.GetString(reader.GetOrdinal("tier_name")),
+                                    prizeType = reader.GetString(reader.GetOrdinal("prize_type")),
+                                    prizeTypeCode = reader.GetString(reader.GetOrdinal("type_code")),
+                                    challengeTitle = reader.GetString(reader.GetOrdinal("challenge_title")),
+                                    winnerName = reader.GetString(reader.GetOrdinal("winner_name")),
+                                    // Include proof image for claimed prizes
+                                    proofImageBase64 = !reader.IsDBNull(reader.GetOrdinal("proof_image")) ? 
+                                        Convert.ToBase64String((byte[])reader["proof_image"]) : null,
+                                    proofFileName = reader.IsDBNull(reader.GetOrdinal("proof_file_name")) ? null : reader.GetString(reader.GetOrdinal("proof_file_name")),
+                                    proofContentType = reader.IsDBNull(reader.GetOrdinal("proof_content_type")) ? null : reader.GetString(reader.GetOrdinal("proof_content_type"))
+                                };
+                                
+                                // Add data URL prefix for images
+                                if (prize.proofImageBase64 != null && prize.proofContentType != null)
+                                {
+                                    var prizeDict = new Dictionary<string, object>();
+                                    foreach (var prop in prize.GetType().GetProperties())
+                                    {
+                                        prizeDict[prop.Name] = prop.GetValue(prize);
+                                    }
+                                    prizeDict["proofImageBase64"] = $"data:{prize.proofContentType};base64,{prize.proofImageBase64}";
+                                    prizes.Add(prizeDict);
+                                }
+                                else
+                                {
+                                    prizes.Add(prize);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return Json(new { success = true, prizes = prizes });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllPrizes: {ex.Message}");
+                return Json(new { error = ex.Message, prizes = new List<object>() });
+            }
+        }        
+
+        [HttpPost]
+        public async Task<IActionResult> ClaimPrizeWithProof([FromBody] ClaimPrizeWithProofRequest request)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId") ?? 0;
+                
+                if (userId == 0)
+                {
+                    userId = HttpContext.Session.GetInt32("StaffId") ?? 0;
+                }
+                
+                // Extract base64 image data (remove data URL prefix if present)
+                string proofImageData = null;
+                if (!string.IsNullOrEmpty(request.ProofImage))
+                {
+                    proofImageData = request.ProofImage;
+                    if (proofImageData.Contains(","))
+                    {
+                        proofImageData = proofImageData.Substring(proofImageData.IndexOf(",") + 1);
+                    }
+                }
+                
+                byte[] proofImageBytes = null;
+                if (!string.IsNullOrEmpty(proofImageData))
+                {
+                    proofImageBytes = Convert.FromBase64String(proofImageData);
+                }
+                
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    using (var command = new SqlCommand("sp_ClaimPrizeWithProof", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@ClaimCode", request.ClaimCode);
+                        command.Parameters.AddWithValue("@WinnerId", request.WinnerId);
+                        command.Parameters.AddWithValue("@UserId", userId);
+                        command.Parameters.AddWithValue("@ProofImage", proofImageBytes ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@ProofFileName", request.ProofFileName ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@ProofContentType", request.ProofContentType ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Notes", request.Notes ?? (object)DBNull.Value);
+                        
+                        await connection.OpenAsync();
+                        
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            if (await reader.ReadAsync())
+                            {
+                                var status = reader["Status"].ToString();
+                                var message = reader["Message"].ToString();
+                                
+                                return Json(new { success = status == "Success", message = message });
+                            }
+                        }
+                    }
+                }
+                
+                return Json(new { success = false, message = "Failed to process claim" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllParticipants(int? challengeId = null)
+        {
+            try
+            {
+                var participants = new List<object>();
+                
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    var sql = @"
+                        SELECT 
+                            cp.participant_id,
+                            cp.challenge_id,
+                            cp.status,
+                            cp.total_distance_km,
+                            cp.total_activities,
+                            cp.joined_at,
+                            cp.completed_at,
+                            c.title as challenge_title,
+                            c.goal_km,
+                            CONCAT(cu.first_name, ' ', ISNULL(cu.middle_name + ' ', ''), cu.last_name) as athlete_name,
+                            cu.username
+                        FROM challenge_participants cp
+                        INNER JOIN challenges c ON cp.challenge_id = c.challenge_id
+                        INNER JOIN consumers cu ON cp.consumer_id = cu.consumer_id
+                        WHERE 1=1";
+                    
+                    if (challengeId.HasValue && challengeId.Value > 0)
+                    {
+                        sql += " AND cp.challenge_id = @ChallengeId";
+                    }
+                    
+                    sql += " ORDER BY cp.joined_at DESC";
+                    
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        if (challengeId.HasValue && challengeId.Value > 0)
+                        {
+                            command.Parameters.AddWithValue("@ChallengeId", challengeId.Value);
+                        }
+                        
+                        await connection.OpenAsync();
+                        
+                        using (var reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                participants.Add(new
+                                {
+                                    participantId = reader.GetInt32(reader.GetOrdinal("participant_id")),
+                                    challengeId = reader.GetInt32(reader.GetOrdinal("challenge_id")),
+                                    status = reader.GetString(reader.GetOrdinal("status")),
+                                    totalDistanceKm = reader.GetDecimal(reader.GetOrdinal("total_distance_km")),
+                                    totalActivities = reader.GetInt32(reader.GetOrdinal("total_activities")),
+                                    joinedAt = reader.GetDateTime(reader.GetOrdinal("joined_at")),
+                                    completedAt = reader.IsDBNull(reader.GetOrdinal("completed_at")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("completed_at")),
+                                    challengeTitle = reader.GetString(reader.GetOrdinal("challenge_title")),
+                                    goalKm = reader.GetDecimal(reader.GetOrdinal("goal_km")),
+                                    athleteName = reader.GetString(reader.GetOrdinal("athlete_name")),
+                                    email = reader.IsDBNull(reader.GetOrdinal("username")) ? null : reader.GetString(reader.GetOrdinal("username")),
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                return Json(new { success = true, participants = participants });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllParticipants: {ex.Message}");
+                return Json(new { error = ex.Message, participants = new List<object>() });
+            }
+        }
+
+        // POST: Update participant status
+        [HttpPost]
+        public async Task<IActionResult> UpdateParticipantStatus([FromBody] UpdateParticipantStatusRequest request)
+        {
+            try
+            {
+                var staffId = HttpContext.Session.GetInt32("StaffId") ?? 0;
+                var adminName = HttpContext.Session.GetString("Username") ?? "System";
+                
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    var sql = @"
+                        UPDATE challenge_participants 
+                        SET status = @Status
+                        WHERE participant_id = @ParticipantId
+                        AND challenge_id = @ChallengeId";
+                    
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@ParticipantId", request.ParticipantId);
+                        command.Parameters.AddWithValue("@ChallengeId", request.ChallengeId);
+                        command.Parameters.AddWithValue("@Status", request.Status);
+                        
+                        await connection.OpenAsync();
+                        int rowsAffected = await command.ExecuteNonQueryAsync();
+                        
+                        if (rowsAffected > 0)
+                        {
+                            // Log the action
+                            await LogAdminAction(staffId, adminName, "Update Participant Status",
+                                $"Participant #{request.ParticipantId}", "Success",
+                                $"Status changed to {request.Status}. Reason: {request.RejectionReason}");
+                            
+                            return Json(new { success = true, message = $"Participant status updated to {request.Status}" });
+                        }
+                        else
+                        {
+                            return Json(new { success = false, message = "Participant not found" });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         // GET: Get user's challenges
         [HttpGet]
         public async Task<IActionResult> GetUserChallenges()
         {
+            await UpdateChallengeStatusesAndAssignPrizes();
             try
             {
                 var userId = HttpContext.Session.GetInt32("UserId") ?? 0;
@@ -3903,7 +4245,7 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
         // GET AVAILABLE AGENTS
         // ═══════════════════════════════════════════════════════════════════
         [HttpGet]
-        public async Task<IActionResult> GetAvailableAgents()
+         public async Task<IActionResult> GetAvailableAgents()
         {
             var agents = new List<object>();
             
@@ -3911,9 +4253,17 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
             {
                 await connection.OpenAsync();
                 using (var cmd = new SqlCommand(@"
-                    SELECT DISTINCT AgentName, AgentStatus 
+                    SELECT DISTINCT AgentName, AgentStatus, COALESCE(AgentID, UserID) AS AgentID 
                     FROM Agents 
-                    WHERE AgentName IS NOT NULL AND (AgentStatus = 'available' OR AgentStatus = 'online')", connection))
+                    WHERE AgentName IS NOT NULL
+                    AND COALESCE(AgentID, UserID) IS NOT NULL
+                    AND (AgentStatus = 'available' OR AgentStatus = 'online')
+                    AND EXISTS (
+                        SELECT 1
+                        FROM users u
+                        WHERE u.user_id = COALESCE(Agents.AgentID, Agents.UserID)
+                        AND u.user_type = 'Support Agent'
+                    )", connection))
                 {
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
@@ -3921,9 +4271,11 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                         {
                             var name = reader.GetString(reader.GetOrdinal("AgentName"));
                             var rawStatus = reader.IsDBNull(reader.GetOrdinal("AgentStatus")) ? "available" : reader.GetString(reader.GetOrdinal("AgentStatus"));
+                            var agentId = reader.GetInt32(reader.GetOrdinal("AgentID"));
                             
                             agents.Add(new
                             {
+                                id = agentId,
                                 name = name,
                                 activeSessions = 0,
                                 maxSessions = 3,
@@ -3944,20 +4296,31 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
         [HttpPost]
         public async Task<IActionResult> QueueAssign([FromBody] AssignSessionRequest model)
         {
-            if (model == null || model.SessionId <= 0 || string.IsNullOrWhiteSpace(model.AgentName))
+            if (model == null || model.SessionId <= 0 || model.AgentId <= 0 || string.IsNullOrWhiteSpace(model.AgentName))
                 return BadRequest(new { success = false, message = "Invalid request." });
 
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                
-                // Update session status to Active
+
                 using (var cmd = new SqlCommand(@"
-                    UPDATE SupportFAQs 
-                    SET Status = 'Active', StartTime = GETDATE(), AgentId = @AgentId 
+                    SELECT COUNT(1)
+                    FROM users
+                    WHERE user_id = @UserId
+                    AND user_type = 'Support Agent'", connection))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", model.AgentId);
+                    var supportAgentCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                    if (supportAgentCount <= 0)
+                        return Json(new { success = false, message = "Selected support agent was not found." });
+                }
+
+                using (var cmd = new SqlCommand(@"
+                    UPDATE SupportFAQs
+                    SET Status = 'Active', StartTime = GETDATE(), AgentId = @AgentId
                     WHERE Id = @Id", connection))
                 {
-                    cmd.Parameters.AddWithValue("@AgentId", model.AgentName);
+                    cmd.Parameters.AddWithValue("@AgentId", model.AgentId);
                     cmd.Parameters.AddWithValue("@Id", model.SessionId);
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -3987,8 +4350,8 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                 
                 // Insert into Agents
                 using (var cmd = new SqlCommand(@"
-                    INSERT INTO Agents (ConversationID, AgentName, ClientName, Category, PreviewQuestion, ChatSlot, ChatStatus, AgentStatus)
-                    VALUES (@ConversationID, @AgentName, @ClientName, @Category, @PreviewQuestion, @ChatSlot, 'Active', 'available')", connection))
+                    INSERT INTO Agents (ConversationID, AgentName, ClientName, Category, PreviewQuestion, ChatSlot, ChatStatus, AgentStatus, AgentID, UserID)
+                    VALUES (@ConversationID, @AgentName, @ClientName, @Category, @PreviewQuestion, @ChatSlot, 'Active', 'available', @AgentID, @UserID)", connection))
                 {
                     cmd.Parameters.AddWithValue("@ConversationID", model.SessionId);
                     cmd.Parameters.AddWithValue("@AgentName", model.AgentName);
@@ -3996,11 +4359,13 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                     cmd.Parameters.AddWithValue("@Category", category);
                     cmd.Parameters.AddWithValue("@PreviewQuestion", previewQ);
                     cmd.Parameters.AddWithValue("@ChatSlot", 1);
+                    cmd.Parameters.AddWithValue("@AgentID", model.AgentId);
+                    cmd.Parameters.AddWithValue("@UserID", model.AgentId);
                     await cmd.ExecuteNonQueryAsync();
                 }
             }
             
-            return Json(new { success = true, sessionId = model.SessionId, agent = model.AgentName, slot = 1 });
+            return Json(new { success = true, sessionId = model.SessionId, agent = model.AgentName, agentId = model.AgentId, slot = 1 });
         }
 
         // ═══════════════════════════════════════════════════════════════════

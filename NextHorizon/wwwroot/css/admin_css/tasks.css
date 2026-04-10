@@ -165,3 +165,29 @@
         .challenge-card-hover:hover h6 {
             color: #0d6efd !important; /* Turn title blue on hover */
         }
+
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.participant-status-badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+}
+
+.action-buttons .btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+}
+
+.proof-upload-container {
+    transition: all 0.3s ease;
+}
+
+.proof-upload-container:hover {
+    background-color: #e9ecef !important;
+    border-color: #0d6efd !important;
+}

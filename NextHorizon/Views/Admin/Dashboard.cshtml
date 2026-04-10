@@ -56,7 +56,7 @@
             <div class="stat-card d-flex align-items-center justify-content-between p-3 border-danger shadow-sm h-100 shadow-hover">
                 <div>
                     <p class="stat-label mb-1 text-danger">Help Center</p>
-                    <h2 class="stat-value mb-0 text-danger">08</h2>
+                    <h2 class="stat-value mb-0 text-danger">@Model.PendingTickets.ToString("D2")</h2>
                     <span class="tiny fw-bold text-muted">Pending Tickets</span>
                 </div>
                 <div class="stat-icon-wrapper text-danger">
@@ -169,25 +169,56 @@
 
     <div class="col-md-4">
         <div class="side-card bg-white p-4 rounded-4 border shadow-sm mb-4">
-            <h6 class="fw-bold small text-uppercase mb-3">Help Center: Pending Inbox</h6>
-            <div class="d-flex flex-column gap-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-light p-2 rounded text-danger"><i class="bi bi-envelope-exclamation"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold">Payout Not Received</p>
-                        <p class="tiny text-muted mb-0">From: Seller_ID_99</p>
+        <h6 class="fw-bold small text-uppercase mb-3">
+            Help Center: Pending Inbox 
+            @if (Model.PendingTicketsList.Any())
+            {
+                <span class="badge bg-danger rounded-pill ms-2">@Model.PendingTicketsList.Count</span>
+            }
+        </h6>
+        <div class="d-flex flex-column gap-3">
+            @if (Model.PendingTicketsList.Any())
+            {
+                @foreach (var ticket in Model.PendingTicketsList.Take(3))
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-light p-2 rounded @ticket.IconColor">
+                            <i class="@ticket.IconClass"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 small fw-bold">@(ticket.Category?.Length > 40 ? ticket.Category.Substring(0, 40) + "..." : ticket.Category)</p>
+                            <p class="tiny text-muted mb-0">
+                                @ticket.Question
+                                <span class="mx-1">•</span>
+                                <span class="text-muted">@ticket.TimeAgo</span>
+                            </p>
+                        </div>
                     </div>
-                </div>
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-light p-2 rounded text-dark"><i class="bi bi-envelope"></i></div>
-                    <div class="flex-grow-1">
-                        <p class="mb-0 small fw-bold">Account Verification</p>
-                        <p class="tiny text-muted mb-0">From: TrailStore</p>
+                }
+                
+                @if (Model.PendingTicketsList.Count > 3)
+                {
+                    <div class="text-center small text-muted mt-1">
+                        +@(Model.PendingTicketsList.Count - 3) more pending tickets
                     </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-3">
+                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                    <p class="small text-muted mb-0 mt-2">No pending tickets</p>
                 </div>
-            </div>
-            <a href="@Url.Action("HelpCenter", "Admin")" class="btn btn-outline-dark btn-sm w-100 rounded-pill mt-3 tiny fw-bold">Go to Help Desk</a>
+            }
         </div>
+        <a href="@Url.Action("HelpCenter", "Admin")" class="btn btn-outline-dark btn-sm w-100 rounded-pill mt-3 tiny fw-bold">
+            Go to Help Desk
+            @if (Model.PendingTickets > 0)
+            {
+                <span class="badge bg-danger rounded-pill ms-1">@Model.PendingTickets</span>
+            }
+        </a>
+    </div>
 
         <div class="side-card bg-white p-4 rounded-4 border shadow-sm">
             <div class="d-flex justify-content-between align-items-center mb-3">

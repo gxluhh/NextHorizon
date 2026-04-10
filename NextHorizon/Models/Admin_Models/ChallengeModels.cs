@@ -247,6 +247,8 @@ namespace NextHorizon.Models.Admin_Models
         public DateTime? ProcessedAt { get; set; }
         public string RejectionReason { get; set; }
         public string AdminNotes { get; set; }
+
+        public string claimNotes { get; set; }
     }
 
     // Request Models
@@ -312,5 +314,23 @@ namespace NextHorizon.Models.Admin_Models
         public int? ChallengeRank { get; set; }
         public decimal ProgressPercent { get; set; }
         public string AvatarUrl { get; set; }
+    }
+
+    public class UpdateParticipantStatusRequest
+    {
+        public int ParticipantId { get; set; }
+        public int ChallengeId { get; set; }
+        public string Status { get; set; }
+        public string RejectionReason { get; set; }
+    }
+
+    public class ClaimPrizeWithProofRequest
+    {
+        public string ClaimCode { get; set; }
+        public int WinnerId { get; set; }
+        public string ProofImage { get; set; }
+        public string ProofFileName { get; set; }
+        public string ProofContentType { get; set; }
+        public string Notes { get; set; }
     }
 }
