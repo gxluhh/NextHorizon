@@ -3967,55 +3967,7 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
             return View(viewModel);
         }
 
-        private async Task<List<AgentStatusViewModel>> GetAgentViewModels()
-        {
-            var agents = new List<AgentStatusViewModel>();
-            
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                
-                using (var cmd = new SqlCommand(@"
-                    SELECT DISTINCT AgentName, AgentStatus, UserID 
-                    FROM Agents 
-                    WHERE AgentName IS NOT NULL", connection))
-                {
-                    using (var reader = await cmd.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            var name = reader.GetString(reader.GetOrdinal("AgentName"));
-                            var rawStatus = reader.IsDBNull(reader.GetOrdinal("AgentStatus")) ? "available" : reader.GetString(reader.GetOrdinal("AgentStatus"));
-                            var mappedStatus = rawStatus.ToLower() switch
-                            {
-                                "available" => "online",
-                                "busy" => "busy",
-                                "away" => "away",
-                                "offline" => "offline",
-                                _ => "online"
-                            };
-                            
-                            var initials = string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                .Take(2)
-                                .Select(w => char.ToUpper(w[0]).ToString()));
-                            
-                            agents.Add(new AgentStatusViewModel
-                            {
-                                Name = name,
-                                Initials = initials,
-                                Status = mappedStatus,
-                                ActiveSessions = 0,
-                                MaxSessions = 3,
-                                Slots = new List<AgentSlot>()
-                            });
-                        }
-                    }
-                }
-            }
-            
-            return agents;
-        }
-
+     
         private async Task<int> GetResolvedTodayCount()
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -4079,24 +4031,24 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
             return Json(sessions);
         }
 
-        // ── Shared helper — builds agent view models ─────────────────────
+
         private async Task<List<AgentStatusViewModel>> BuildAgentViewModels()
         {
             var agents = new List<AgentStatusViewModel>();
-            
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                
-                // Get active agents with their current conversations
+
                 var activeAgents = new Dictionary<string, List<AgentSlot>>();
-                
+
+                // First query - get active conversations
+                // Using only columns confirmed in your Agents table screenshot
                 using (var cmd = new SqlCommand(@"
-                    SELECT AgentName, ConversationID, ClientName, Category, ChatSlot, ChatStatus
-                    FROM Agents 
-                    WHERE (ChatStatus = 'Active' OR ChatStatus = 'active')
-                    AND ChatStatus != 'Resolved'
-                    AND ConversationID IS NOT NULL", connection))
+            SELECT AgentName, ConversationID, ClientName, Category, ChatStatus
+            FROM Agents 
+            WHERE ChatStatus = 'Active'
+            AND ConversationID IS NOT NULL", connection))
                 {
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
@@ -4108,29 +4060,33 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                                 ConversationId = reader.IsDBNull(reader.GetOrdinal("ConversationID")) ? 0 : Convert.ToInt32(reader["ConversationID"]),
                                 ClientName = reader.IsDBNull(reader.GetOrdinal("ClientName")) ? "" : reader.GetString(reader.GetOrdinal("ClientName")),
                                 Category = reader.IsDBNull(reader.GetOrdinal("Category")) ? "General" : reader.GetString(reader.GetOrdinal("Category")),
-                                SlotNumber = reader.IsDBNull(reader.GetOrdinal("ChatSlot")) ? 0 : Convert.ToInt32(reader["ChatSlot"])
+                                SlotNumber = 1 // default since ChatSlot is split into ChatSlot1/2/3
                             };
-                            
+
                             if (!activeAgents.ContainsKey(agentName))
                                 activeAgents[agentName] = new List<AgentSlot>();
-                            
+
                             activeAgents[agentName].Add(slot);
                         }
                     }
                 }
-                
-                // Get all distinct agent names
+
+                // Second query - get distinct agents using only confirmed columns
                 using (var cmd = new SqlCommand(@"
-                    SELECT DISTINCT AgentName, AgentStatus 
-                    FROM Agents 
-                    WHERE AgentName IS NOT NULL", connection))
+            SELECT DISTINCT AgentName, AgentStatus, UserID
+            FROM Agents 
+            WHERE AgentName IS NOT NULL
+            AND UserID IS NOT NULL", connection))
                 {
                     using (var reader = await cmd.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
                         {
                             var name = reader.GetString(reader.GetOrdinal("AgentName"));
-                            var rawStatus = reader.IsDBNull(reader.GetOrdinal("AgentStatus")) ? "available" : reader.GetString(reader.GetOrdinal("AgentStatus"));
+                            var rawStatus = reader.IsDBNull(reader.GetOrdinal("AgentStatus"))
+                                            ? "available"
+                                            : reader.GetString(reader.GetOrdinal("AgentStatus"));
+
                             var mappedStatus = rawStatus.ToLower() switch
                             {
                                 "available" => "online",
@@ -4139,13 +4095,19 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                                 "offline" => "offline",
                                 _ => "online"
                             };
-                            
-                            var initials = string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                .Take(2)
-                                .Select(w => char.ToUpper(w[0]).ToString()));
-                            
-                            var slots = activeAgents.ContainsKey(name) ? activeAgents[name] : new List<AgentSlot>();
-                            
+
+                            var initials = string.Concat(
+                                name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                    .Take(2)
+                                    .Select(w => char.ToUpper(w[0]).ToString()));
+
+                            // Skip duplicate agent names
+                            if (agents.Any(a => a.Name == name)) continue;
+
+                            var slots = activeAgents.ContainsKey(name)
+                                        ? activeAgents[name]
+                                        : new List<AgentSlot>();
+
                             agents.Add(new AgentStatusViewModel
                             {
                                 Name = name,
@@ -4159,10 +4121,9 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                     }
                 }
             }
-            
+
             return agents;
         }
-
         // ═══════════════════════════════════════════════════════════════════
         // GET AGENT STATUS
         // ═══════════════════════════════════════════════════════════════════
@@ -4321,18 +4282,18 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
                         }
                     }
                 }
-                
+
                 // Insert into Agents
+               
                 using (var cmd = new SqlCommand(@"
-                    INSERT INTO Agents (ConversationID, AgentName, ClientName, Category, PreviewQuestion, ChatSlot, ChatStatus, AgentStatus, AgentID, UserID)
-                    VALUES (@ConversationID, @AgentName, @ClientName, @Category, @PreviewQuestion, @ChatSlot, 'Active', 'available', @AgentID, @UserID)", connection))
+    INSERT INTO Agents (ConversationID, AgentName, ClientName, Category, PreviewQuestion, ChatStatus, AgentStatus, AgentID, UserID)
+    VALUES (@ConversationID, @AgentName, @ClientName, @Category, @PreviewQuestion, 'Active', 'available', @AgentID, @UserID)", connection))
                 {
                     cmd.Parameters.AddWithValue("@ConversationID", model.SessionId);
                     cmd.Parameters.AddWithValue("@AgentName", model.AgentName);
                     cmd.Parameters.AddWithValue("@ClientName", clientName);
                     cmd.Parameters.AddWithValue("@Category", category);
                     cmd.Parameters.AddWithValue("@PreviewQuestion", previewQ);
-                    cmd.Parameters.AddWithValue("@ChatSlot", 1);
                     cmd.Parameters.AddWithValue("@AgentID", model.AgentId);
                     cmd.Parameters.AddWithValue("@UserID", model.AgentId);
                     await cmd.ExecuteNonQueryAsync();
