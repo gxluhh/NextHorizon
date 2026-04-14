@@ -2745,32 +2745,6 @@ public async Task<IActionResult> UpdateSellerInfo([FromBody] UpdateSellerInfoReq
             }
         }
 
-        // POST: Auto-assign prizes when challenge ends
-        [HttpPost]
-        public async Task<IActionResult> AutoAssignPrizes(int challengeId)
-        {
-            try
-            {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    using (var cmd = new SqlCommand("sp_AutoAssignChallengePrizes", connection))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@ChallengeId", challengeId);
-                        
-                        await connection.OpenAsync();
-                        await cmd.ExecuteNonQueryAsync();
-                        
-                        return Json(new { success = true, message = "Prizes assigned successfully" });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
         // GET: Get participant activities
         [HttpGet]
         public async Task<IActionResult> GetParticipantActivities(int participantId)
