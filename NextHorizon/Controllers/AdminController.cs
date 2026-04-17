@@ -4175,6 +4175,9 @@ namespace NextHorizon.Controllers
                             var slot2Conv = reader["Slot2ConvId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Slot2ConvId"]);
                             var slot3Conv = reader["Slot3ConvId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Slot3ConvId"]);
 
+                            // fetch client names for active slots
+                            string slot1Client = "", slot2Client = "", slot3Client = "";
+
                             // Determine overall agent status
                             var hasActive = slot1Chat == "Active" || slot2Chat == "Active" || slot3Chat == "Active";
                             var allActive = slot1Chat == "Active" && slot2Chat == "Active" && slot3Chat == "Active";
@@ -4182,10 +4185,11 @@ namespace NextHorizon.Controllers
                             var mappedStatus = agentStatus.ToLower() switch
                             {
                                 "available" when allActive => "busy",
-                                "available" when hasActive => "busy",
+                                "available" when hasActive => "online",
                                 "available" => "online",
                                 "busy" => "busy",
-                                "away" => "away",
+                                "break" => "away",
+                                "lunch" => "away",
                                 "offline" => "offline",
                                 _ => "online"
                             };
@@ -4197,11 +4201,11 @@ namespace NextHorizon.Controllers
 
                             var slots = new List<object>();
                             if (slot1Conv > 0)
-                                slots.Add(new { convId = slot1Conv, client = "Customer #" + slot1Conv, cat = "General", slotNum = 1 });
+                                slots.Add(new { convId = slot1Conv, client = "Conv #" + slot1Conv, cat = "Support", slotNum = 1 });
                             if (slot2Conv > 0)
-                                slots.Add(new { convId = slot2Conv, client = "Customer #" + slot2Conv, cat = "General", slotNum = 2 });
+                                slots.Add(new { convId = slot2Conv, client = "Conv #" + slot2Conv, cat = "Support", slotNum = 2 });
                             if (slot3Conv > 0)
-                                slots.Add(new { convId = slot3Conv, client = "Customer #" + slot3Conv, cat = "General", slotNum = 3 });
+                                slots.Add(new { convId = slot3Conv, client = "Conv #" + slot3Conv, cat = "Support", slotNum = 3 });
 
                             agents.Add(new
                             {

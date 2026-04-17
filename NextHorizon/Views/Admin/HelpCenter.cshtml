@@ -114,23 +114,24 @@
         }
 
         /* ── LAYOUT ── */
-        .hc-shell {
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 14px;
-            min-height: 580px;
-        }
+       .hc-shell {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 14px;
+            }
 
         .hc-left {
             display: flex;
             flex-direction: column;
             gap: 14px;
+            min-width: 0;
         }
 
         .hc-right {
             display: flex;
             flex-direction: column;
             gap: 14px;
+            min-width: 0;
         }
 
         .panel {
@@ -665,7 +666,7 @@
         .empty-slot {
             padding: 9px 12px;
             font-size: 11px;
-            color: #ccc;
+            color: #888;
             font-style: italic;
             border-bottom: 1px solid #f5f5f5;
             display: flex;
@@ -865,7 +866,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            height: 500px;
+            height: 460px;
         }
 
         .faq-search {
@@ -1271,133 +1272,135 @@
 </div>
 
 <div class="hc-shell">
-    <!-- LEFT COLUMN -->
+    <!-- LEFT COLUMN: Live Queue + Agent Status stacked -->
     <div class="hc-left">
 
-        <div class="ph">
-            <div>
-                <div class="ph-title">Live Queue</div>
-                <div class="ph-sub" id="qMeta">@Model.Stats.InQueue in queue</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:14px;">
-                <!-- Auto-Assign Toggle -->
-                <div style="display:flex;align-items:center;gap:7px;">
-                    <span style="font-size:10.5px;color:#888;font-weight:500;">Auto-Assign</span>
-                    <div id="autoAssignToggle" onclick="toggleAutoAssign()" style="width:44px;height:24px;border-radius:12px;cursor:pointer;background:#e53e3e;position:relative;transition:background 0.3s;flex-shrink:0;">
-                        <div id="toggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>
+        <!-- LIVE QUEUE PANEL -->
+        <div class="panel">
+            <div class="ph">
+                <div>
+                    <div class="ph-title">Live Queue</div>
+                    <div class="ph-sub" id="qMeta">@Model.Stats.InQueue in queue</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <span style="font-size:10.5px;color:#888;font-weight:500;">Auto-Assign</span>
+                        <div id="autoAssignToggle" onclick="toggleAutoAssign()" style="width:44px;height:24px;border-radius:12px;cursor:pointer;background:#e53e3e;position:relative;transition:background 0.3s;flex-shrink:0;">
+                            <div id="toggleKnob" style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>
+                        </div>
+                        <span id="autoAssignLabel" style="font-size:10.5px;color:#e53e3e;font-weight:700;min-width:20px;">OFF</span>
                     </div>
-                    <span id="autoAssignLabel" style="font-size:10.5px;color:#e53e3e;font-weight:700;min-width:20px;">OFF</span>
-                </div>
-                <span style="font-size:10.5px;color:#4ade80;font-weight:600;display:flex;align-items:center;gap:5px;">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    Live queue
-                </span>
-            </div>
-        </div>
-        <div class="wait-warn" id="waitWarn">
-            <div class="ww-left">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                <span id="warnTxt">Customers waiting over 5 minutes</span>
-            </div>
-        </div>
-        <div class="q-scroll">
-            <table class="qtbl">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Customer</th>
-                        <th>Wait Time</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="qBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- AGENT STATUS 3-COL -->
-    <div class="panel" style="height:280px;">
-        <div class="ph">
-            <div>
-                <div class="ph-title">Agent Status</div>
-                <div class="ph-sub" id="agentMeta">@Model.Stats.AgentsOnline online &middot; max 3 chats each</div>
-            </div>
-            <div style="font-size:10px;color:#aaa;">Total capacity: <strong style="color:#1a1a1a;">9 sessions</strong></div>
-        </div>
-        <div class="agent-grid" id="agentGrid"></div>
-    </div>
-</div>
-
-<!-- RIGHT COLUMN: FAQ MANAGER -->
-<div class="hc-right">
-
-    <!-- ADD FAQ FORM -->
-    <div class="faq-form">
-        <div class="ph">
-            <div>
-                <div class="ph-title">FAQ Manager</div>
-                <div class="ph-sub">Add, edit, or remove FAQs in real time</div>
-            </div>
-        </div>
-        <div class="form-body">
-            <div>
-                <div class="field-lbl">Category</div>
-                <div class="cat-add-row">
-                    <input class="cat-text-inp" id="newCatInp" type="text" placeholder="Add new category..." maxlength="50"
-                           onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}" />
-                    <button class="cat-add-btn" onclick="addCategory()">+ Add</button>
-                </div>
-                <div class="cat-chips" id="catChips"></div>
-            </div>
-            <div>
-                <div class="field-lbl">Question</div>
-                <input class="faq-inp" id="faqQ" type="text" placeholder="e.g. How do I track my order?" maxlength="500" />
-            </div>
-            <div>
-                <div class="field-lbl">Answer</div>
-                <textarea class="faq-inp" id="faqA" placeholder="Type the full response here..."></textarea>
-            </div>
-            <div>
-                <div class="field-lbl">Visible to</div>
-                <div class="radio-row">
-                    <label class="radio-opt"><input type="radio" name="userType" value="Consumer" checked /><span>Consumer</span></label>
-                    <label class="radio-opt"><input type="radio" name="userType" value="Seller" /><span>Seller</span></label>
+                    <span style="font-size:10.5px;color:#4ade80;font-weight:600;display:flex;align-items:center;gap:5px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Live queue
+                    </span>
                 </div>
             </div>
+            <div class="wait-warn" id="waitWarn">
+                <div class="ww-left">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    <span id="warnTxt">Customers waiting over 5 minutes</span>
+                </div>
+            </div>
+            <div class="q-scroll" style="max-height:220px;">
+                <table class="qtbl">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Customer</th>
+                            <th>Wait Time</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qBody"></tbody>
+                </table>
+            </div>
         </div>
-        <div class="form-foot">
-            <button class="pbtn" onclick="addFaq()">
-                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                Add FAQ
-            </button>
+
+        <!-- AGENT STATUS PANEL (below Live Queue) -->
+        <div class="panel">
+            <div class="ph">
+                <div>
+                    <div class="ph-title">Agent Status</div>
+                    <div class="ph-sub" id="agentMeta">@Model.Stats.AgentsOnline online &middot; max 3 chats each</div>
+                </div>
+                <div style="font-size:10px;color:#aaa;">Total capacity: <strong style="color:#1a1a1a;">9 sessions</strong></div>
+            </div>
+            <div class="agent-grid" id="agentGrid" style="min-height:140px;"></div>
         </div>
+
     </div>
 
-    <!-- PUBLISHED FAQS -->
-    <div class="faq-list-panel">
-        <div class="ph">
-            <div class="ph-title">Published FAQs</div>
-            <span id="faqListCount" style="font-size:11px;color:#aaa;font-weight:500;">@Model.Faqs.Count FAQs</span>
+    <!-- RIGHT COLUMN: FAQ Manager + Published FAQs stacked -->
+    <div class="hc-right">
+
+        <!-- FAQ FORM -->
+        <div class="faq-form">
+            <div class="ph">
+                <div>
+                    <div class="ph-title">FAQ Manager</div>
+                    <div class="ph-sub">Add, edit, or remove FAQs in real time</div>
+                </div>
+            </div>
+            <div class="form-body">
+                <div>
+                    <div class="field-lbl">Category</div>
+                    <div class="cat-add-row">
+                        <input class="cat-text-inp" id="newCatInp" type="text" placeholder="Add new category..." maxlength="50"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}" />
+                        <button class="cat-add-btn" onclick="addCategory()">+ Add</button>
+                    </div>
+                    <div class="cat-chips" id="catChips"></div>
+                </div>
+                <div>
+                    <div class="field-lbl">Question</div>
+                    <input class="faq-inp" id="faqQ" type="text" placeholder="e.g. How do I track my order?" maxlength="500" />
+                </div>
+                <div>
+                    <div class="field-lbl">Answer</div>
+                    <textarea class="faq-inp" id="faqA" placeholder="Type the full response here..."></textarea>
+                </div>
+                <div>
+                    <div class="field-lbl">Visible to</div>
+                    <div class="radio-row">
+                        <label class="radio-opt"><input type="radio" name="userType" value="Consumer" checked /><span>Consumer</span></label>
+                        <label class="radio-opt"><input type="radio" name="userType" value="Seller" /><span>Seller</span></label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-foot">
+                <button class="pbtn" onclick="addFaq()">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Add FAQ
+                </button>
+            </div>
         </div>
-        <div class="faq-search">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-            <input type="text" placeholder="Search FAQs..." oninput="filterFaqs(this.value)" />
+
+        <!-- PUBLISHED FAQS -->
+        <div class="faq-list-panel">
+            <div class="ph">
+                <div class="ph-title">Published FAQs</div>
+                <span id="faqListCount" style="font-size:11px;color:#aaa;font-weight:500;">@Model.Faqs.Count FAQs</span>
+            </div>
+            <div class="faq-search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                <input type="text" placeholder="Search FAQs..." oninput="filterFaqs(this.value)" />
+            </div>
+            <div style="display:flex;gap:5px;padding:8px 16px;border-bottom:1px solid #f5f5f5;flex-shrink:0;flex-wrap:wrap;" id="utFilterBar">
+                <button class="ff on" onclick="setUtFilter(this,'all')">All</button>
+                <button class="ff" onclick="setUtFilter(this,'Consumer')">Consumer</button>
+                <button class="ff" onclick="setUtFilter(this,'Seller')">Seller</button>
+            </div>
+            <div class="faq-filter" id="faqFilterBar"></div>
+            <div class="faq-scroll" id="faqList"></div>
         </div>
-        <div style="display:flex;gap:5px;padding:8px 16px;border-bottom:1px solid #f5f5f5;flex-shrink:0;flex-wrap:wrap;" id="utFilterBar">
-            <button class="ff on" onclick="setUtFilter(this,'all')">All</button>
-            <button class="ff" onclick="setUtFilter(this,'Consumer')">Consumer</button>
-            <button class="ff" onclick="setUtFilter(this,'Seller')">Seller</button>
-        </div>
-        <div class="faq-filter" id="faqFilterBar"></div>
-        <div class="faq-scroll" id="faqList"></div>
+
     </div>
 </div>
-</div>
-
 <div id="dd-portal"></div>
 
 <!-- DELETE CONFIRMATION MODAL -->
@@ -1695,7 +1698,7 @@
                             + '</div>'
                             + '<div style="flex:1;min-width:0;">'
                             +   '<div style="font-size:11px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escH(titleCase(a.name))+'</div>'
-                            +   '<div style="font-size:10px;color:#ccc;font-style:italic;margin-top:1px;">Available</div>'
+                            +   '<div style="font-size:10px;color:#888;font-style:italic;margin-top:1px;">Available</div>'
                             + '</div>'
                             + '<span class="badge '+statusCls+'" style="font-size:9px;padding:1px 6px;">'+a.status+'</span>';
                     }
@@ -1977,9 +1980,9 @@
                 })
                 .catch(function () { /* silent */ });
         }
-
         setInterval(refreshQueue,  5000);
         setInterval(refreshAgents, 3000);
+        refreshAgents();
                 // ── AUTO-ASSIGN TOGGLE ────────────────────────────────────────────
         var AUTO_ASSIGN_ON  = false;
         var autoAssignTimer = null;
