@@ -1296,106 +1296,106 @@
                 </span>
             </div>
         </div>
-            <div class="wait-warn" id="waitWarn">
-                <div class="ww-left">
-                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                    <span id="warnTxt">Customers waiting over 5 minutes</span>
-                </div>
-            </div>
-            <div class="q-scroll">
-                <table class="qtbl">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Customer</th>
-                            <th>Wait Time</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="qBody"></tbody>
-                </table>
+        <div class="wait-warn" id="waitWarn">
+            <div class="ww-left">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <span id="warnTxt">Customers waiting over 5 minutes</span>
             </div>
         </div>
-
-        <!-- AGENT STATUS 3-COL -->
-        <div class="panel" style="height:280px;">
-            <div class="ph">
-                <div>
-                    <div class="ph-title">Agent Status</div>
-                    <div class="ph-sub" id="agentMeta">@Model.Stats.AgentsOnline online &middot; max 3 chats each</div>
-                </div>
-                <div style="font-size:10px;color:#aaa;">Total capacity: <strong style="color:#1a1a1a;">9 sessions</strong></div>
-            </div>
-            <div class="agent-grid" id="agentGrid"></div>
+        <div class="q-scroll">
+            <table class="qtbl">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>Wait Time</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="qBody"></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- RIGHT COLUMN: FAQ MANAGER -->
-    <div class="hc-right">
+    <!-- AGENT STATUS 3-COL -->
+    <div class="panel" style="height:280px;">
+        <div class="ph">
+            <div>
+                <div class="ph-title">Agent Status</div>
+                <div class="ph-sub" id="agentMeta">@Model.Stats.AgentsOnline online &middot; max 3 chats each</div>
+            </div>
+            <div style="font-size:10px;color:#aaa;">Total capacity: <strong style="color:#1a1a1a;">9 sessions</strong></div>
+        </div>
+        <div class="agent-grid" id="agentGrid"></div>
+    </div>
+</div>
 
-        <!-- ADD FAQ FORM -->
-        <div class="faq-form">
-            <div class="ph">
-                <div>
-                    <div class="ph-title">FAQ Manager</div>
-                    <div class="ph-sub">Add, edit, or remove FAQs in real time</div>
-                </div>
-            </div>
-            <div class="form-body">
-                <div>
-                    <div class="field-lbl">Category</div>
-                    <div class="cat-add-row">
-                        <input class="cat-text-inp" id="newCatInp" type="text" placeholder="Add new category..." maxlength="50"
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}" />
-                        <button class="cat-add-btn" onclick="addCategory()">+ Add</button>
-                    </div>
-                    <div class="cat-chips" id="catChips"></div>
-                </div>
-                <div>
-                    <div class="field-lbl">Question</div>
-                    <input class="faq-inp" id="faqQ" type="text" placeholder="e.g. How do I track my order?" maxlength="500" />
-                </div>
-                <div>
-                    <div class="field-lbl">Answer</div>
-                    <textarea class="faq-inp" id="faqA" placeholder="Type the full response here..."></textarea>
-                </div>
-                <div>
-                    <div class="field-lbl">Visible to</div>
-                    <div class="radio-row">
-                        <label class="radio-opt"><input type="radio" name="userType" value="Consumer" checked /><span>Consumer</span></label>
-                        <label class="radio-opt"><input type="radio" name="userType" value="Seller" /><span>Seller</span></label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-foot">
-                <button class="pbtn" onclick="addFaq()">
-                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                    Add FAQ
-                </button>
+<!-- RIGHT COLUMN: FAQ MANAGER -->
+<div class="hc-right">
+
+    <!-- ADD FAQ FORM -->
+    <div class="faq-form">
+        <div class="ph">
+            <div>
+                <div class="ph-title">FAQ Manager</div>
+                <div class="ph-sub">Add, edit, or remove FAQs in real time</div>
             </div>
         </div>
-
-        <!-- PUBLISHED FAQS -->
-        <div class="faq-list-panel">
-            <div class="ph">
-                <div class="ph-title">Published FAQs</div>
-                <span id="faqListCount" style="font-size:11px;color:#aaa;font-weight:500;">@Model.Faqs.Count FAQs</span>
+        <div class="form-body">
+            <div>
+                <div class="field-lbl">Category</div>
+                <div class="cat-add-row">
+                    <input class="cat-text-inp" id="newCatInp" type="text" placeholder="Add new category..." maxlength="50"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();addCategory();}" />
+                    <button class="cat-add-btn" onclick="addCategory()">+ Add</button>
+                </div>
+                <div class="cat-chips" id="catChips"></div>
             </div>
-            <div class="faq-search">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                <input type="text" placeholder="Search FAQs..." oninput="filterFaqs(this.value)" />
+            <div>
+                <div class="field-lbl">Question</div>
+                <input class="faq-inp" id="faqQ" type="text" placeholder="e.g. How do I track my order?" maxlength="500" />
             </div>
-            <div style="display:flex;gap:5px;padding:8px 16px;border-bottom:1px solid #f5f5f5;flex-shrink:0;flex-wrap:wrap;" id="utFilterBar">
-                <button class="ff on" onclick="setUtFilter(this,'all')">All</button>
-                <button class="ff" onclick="setUtFilter(this,'Consumer')">Consumer</button>
-                <button class="ff" onclick="setUtFilter(this,'Seller')">Seller</button>
+            <div>
+                <div class="field-lbl">Answer</div>
+                <textarea class="faq-inp" id="faqA" placeholder="Type the full response here..."></textarea>
             </div>
-            <div class="faq-filter" id="faqFilterBar"></div>
-            <div class="faq-scroll" id="faqList"></div>
+            <div>
+                <div class="field-lbl">Visible to</div>
+                <div class="radio-row">
+                    <label class="radio-opt"><input type="radio" name="userType" value="Consumer" checked /><span>Consumer</span></label>
+                    <label class="radio-opt"><input type="radio" name="userType" value="Seller" /><span>Seller</span></label>
+                </div>
+            </div>
+        </div>
+        <div class="form-foot">
+            <button class="pbtn" onclick="addFaq()">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Add FAQ
+            </button>
         </div>
     </div>
+
+    <!-- PUBLISHED FAQS -->
+    <div class="faq-list-panel">
+        <div class="ph">
+            <div class="ph-title">Published FAQs</div>
+            <span id="faqListCount" style="font-size:11px;color:#aaa;font-weight:500;">@Model.Faqs.Count FAQs</span>
+        </div>
+        <div class="faq-search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+            <input type="text" placeholder="Search FAQs..." oninput="filterFaqs(this.value)" />
+        </div>
+        <div style="display:flex;gap:5px;padding:8px 16px;border-bottom:1px solid #f5f5f5;flex-shrink:0;flex-wrap:wrap;" id="utFilterBar">
+            <button class="ff on" onclick="setUtFilter(this,'all')">All</button>
+            <button class="ff" onclick="setUtFilter(this,'Consumer')">Consumer</button>
+            <button class="ff" onclick="setUtFilter(this,'Seller')">Seller</button>
+        </div>
+        <div class="faq-filter" id="faqFilterBar"></div>
+        <div class="faq-scroll" id="faqList"></div>
+    </div>
+</div>
 </div>
 
 <div id="dd-portal"></div>
@@ -1524,13 +1524,14 @@
                         var agentId  = Number(a.id) || 0;
                         var initials = (a.name||'').split(' ').filter(Boolean).slice(0,2)
                                         .map(function(w){ return w[0].toUpperCase(); }).join('');
-                        var safeName = escH(a.name).replace(/'/g,"&#39;");
-                        html += '<div class="assign-agent-opt" onclick="confirmAssign('+sessionId+','+agentId+',\''+safeName+'\')">'
-                              + '<div class="aao-av">'+initials+'<div class="aao-dot '+dotCls+'"></div></div>'
-                              + '<div class="aao-info">'
-                              +   '<div class="aao-name">'+escH(titleCase(a.name))+'</div>'
-                              +   '<div class="aao-slots">'+a.activeSessions+' / '+a.maxSessions+' slots used</div>'
-                              + '</div></div>';
+                                var safeName = escH(a.name).replace(/'/g,"&#39;");
+        var bestSlot = Number(a.bestSlot) || 0;
+        html += '<div class="assign-agent-opt" onclick="confirmAssign('+sessionId+','+agentId+',\''+safeName+'\','+bestSlot+')">'
+              + '<div class="aao-av">'+initials+'<div class="aao-dot '+dotCls+'"></div></div>'
+              + '<div class="aao-info">'
+              +   '<div class="aao-name">'+escH(titleCase(a.name))+'</div>'
+              +   '<div class="aao-slots">Load: '+a.load+'/3 &middot; Best slot: Slot '+bestSlot+'</div>'
+              + '</div></div>';
                     });
                     _ddPortal.innerHTML = html;
 
@@ -1550,7 +1551,7 @@
                 });
         }
 
-        function confirmAssign(sessionId, agentId, agentName) {
+                function confirmAssign(sessionId, agentId, agentName, bestSlot) {
             closeDropdown();
             var s = SESSIONS.find(function(x){ return x.id === sessionId; });
             if (!s) return;
@@ -1559,18 +1560,24 @@
                 return;
             }
 
-            postJson('/Admin/QueueAssign', { sessionId: sessionId, agentId: agentId, agentName: agentName })
-                .then(function(data) {
-                    if (data.success) {
-                        SESSIONS = SESSIONS.filter(function(x){ return x.id !== sessionId; });
-                        renderQueue();
-                        showToast(titleCase(s.name) + ' assigned to ' + titleCase(agentName) + '.');
-                        refreshAgents();
-                    } else {
-                        showToast(data.message || 'Assignment failed.');
-                    }
-                })
-                .catch(function() { showToast('Could not reach server.'); });
+            postJson('/Admin/QueueAssign', {
+                sessionId:  sessionId,
+                agentId:    agentId,
+                agentName:  agentName,
+                slotNumber: bestSlot || 0
+            })
+            .then(function(data) {
+                if (data.success) {
+                    SESSIONS = SESSIONS.filter(function(x){ return x.id !== sessionId; });
+                    renderQueue();
+                    showToast(titleCase(s.name) + ' assigned to ' + titleCase(agentName)
+                        + ' (Slot ' + (data.slot || bestSlot || '?') + ').');
+                    refreshAgents();
+                } else {
+                    showToast(data.message || 'Assignment failed.');
+                }
+            })
+            .catch(function() { showToast('Could not reach server.'); });
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -2006,37 +2013,64 @@
             if (autoAssignTimer) { clearInterval(autoAssignTimer); autoAssignTimer = null; }
         }
 
-        function runAutoAssign() {
+               function runAutoAssign() {
             if (!AUTO_ASSIGN_ON) return;
-            var waiting = SESSIONS.filter(function(s){ return s.status === 'waiting'; });
+
+            // Fix: sessions from the server have status 'waiting' (lowercase)
+            var waiting = SESSIONS.filter(function(s){
+                var st = String(s.status || '').toLowerCase();
+                return st === 'waiting';
+            });
             if (!waiting.length) return;
 
             fetch('/Admin/GetAvailableAgents')
                 .then(function(r){ return r.json(); })
                 .then(function(agents){
                     if (!agents || !agents.length) return;
-                    var agent   = agents[0];
+
+                    // Process one session at a time to avoid race conditions
                     var session = waiting[0];
-                    postJson('/Admin/QueueAssign', { sessionId: session.id, agentId: Number(agent.id)||0, agentName: agent.name })
-                        .then(function(result){
-                            if (result.success) {
-                                SESSIONS = SESSIONS.filter(function(s){ return s.id !== session.id; });
-                                renderQueue();
-                                refreshAgents();
-                                showAutoAssignToast(session, agent.name);
+                    var agent   = agents[0]; // Already sorted: least load + longest idle first
+
+                    postJson('/Admin/QueueAssign', {
+                        sessionId:  session.id,
+                        agentId:    Number(agent.id) || 0,
+                        agentName:  agent.name,
+                        slotNumber: Number(agent.bestSlot) || 0
+                    })
+                    .then(function(result){
+                        if (result.success) {
+                            SESSIONS = SESSIONS.filter(function(s){ return s.id !== session.id; });
+                            renderQueue();
+                            refreshAgents();
+                            showAutoAssignToast(session, agent.name, result.slot);
+
+                            // If more sessions waiting, process the next one after a short delay
+                            if (waiting.length > 1) {
+                                setTimeout(runAutoAssign, 1500);
                             }
-                        })
-                        .catch(function(){});
+                        }
+                    })
+                    .catch(function(){});
                 })
                 .catch(function(){});
         }
 
-        function showAutoAssignToast(session, agentName) {
+                function showAutoAssignToast(session, agentName, slot) {
             var t = document.createElement('div');
-            t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 16px;font-size:12px;font-family:Poppins,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9999;border-left:3px solid #38a169;max-width:260px;line-height:1.5;';
-            t.innerHTML = '<strong>Auto-Assigned</strong><br>Session #'+session.id+' &rarr; '+escH(titleCase(agentName));
+            t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;'
+                + 'padding:10px 16px;font-size:12px;font-family:Poppins,sans-serif;'
+                + 'box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9999;border-left:3px solid #38a169;'
+                + 'max-width:280px;line-height:1.5;';
+            t.innerHTML = '<strong>Auto-Assigned</strong><br>Session #'+session.id
+                + ' &rarr; '+escH(titleCase(agentName))
+                + (slot ? ' &middot; Slot '+slot : '');
             document.body.appendChild(t);
-            setTimeout(function(){ t.style.transition='opacity .4s'; t.style.opacity='0'; setTimeout(function(){ document.body.removeChild(t); },400); }, 3000);
+            setTimeout(function(){
+                t.style.transition = 'opacity .4s';
+                t.style.opacity    = '0';
+                setTimeout(function(){ document.body.removeChild(t); }, 400);
+            }, 3000);
         }
         renderQueue();
         renderAgents();
