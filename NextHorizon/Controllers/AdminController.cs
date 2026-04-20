@@ -4190,6 +4190,7 @@ namespace NextHorizon.Controllers
                                 "busy" => "busy",
                                 "break" => "away",
                                 "lunch" => "away",
+                                "eos" => "away",
                                 "offline" => "offline",
                                 _ => "online"
                             };

@@ -114,11 +114,11 @@
         }
 
         /* ── LAYOUT ── */
-       .hc-shell {
-        display: grid;
-        grid-template-columns: 1fr 420px;
-        gap: 14px;
-            }
+        .hc-shell {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 14px;
+        }
 
         .hc-left {
             display: flex;
@@ -1980,8 +1980,8 @@
                 })
                 .catch(function () { /* silent */ });
         }
-        setInterval(refreshQueue,  5000);
-        setInterval(refreshAgents, 3000);
+        setInterval(refreshQueue,  1000);
+        setInterval(refreshAgents, 1000);
         refreshAgents();
                 // ── AUTO-ASSIGN TOGGLE ────────────────────────────────────────────
         var AUTO_ASSIGN_ON  = false;
